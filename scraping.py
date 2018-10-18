@@ -18,53 +18,72 @@ def scrape_data(content, parser):
     return scraper(content, parser)
 
 
-def get_routes(content):
-    return [route.text.strip() for route in content.find_all(class_='route-city')]
+def get_name(content):
+    return content.find(class_='river-site-highlight').h1.get_text('', strip=True)
 
 
-def get_dates_prices(content):
-    dates_prices = []
-    for date_price in content.find_all(class_='accordeon-panel-default'):
-        period = date_price.find(class_='price-duration').text
-        start_date = period.split('-')[0].strip()
-        transformed_start_date = datetime.strptime(start_date, '%d. %b %Y').strftime('%Y-%m-%d')
+def get_days(content):
+    return content.find(class_='cruise-duration').text.strip(' Days')
 
-        data = {
-            transformed_start_date: {
-                'ship': date_price.find(class_='table-ship-name').text,
-                'price': date_price.find(class_='big-table-font').string.strip('\n').strip()[2:]
+
+def get_itinerary(content):
+    block = content.find(class_='route')
+    return [route.get_text('', strip=True) for route in block.find_all(class_='route-city')]
+
+
+def get_dates(content):
+    block = content.find(class_='accordeon-data-price')
+
+    dates = []
+    for date in block.find_all(class_='accordeon-panel-default'):
+        start_date = date.find(class_='price-duration').text.split('-')[0].strip()
+        new_format_start_date = transform_date(start_date)
+
+        result = {
+            new_format_start_date: {
+                'ship': date.find(class_='table-ship-name').get_text('', strip=True),
+                'price': date.find(class_='big-table-font').get_text('', strip=True)[2:]
             }
         }
-        dates_prices.append(data)
-    return dates_prices
+
+        dates.append(result)
+
+    return dates
 
 
-url = domain + '/en/river-cruises/cruise.html'
-home_page = do_request(url, headers)
+def transform_date(date):
+    return datetime.strptime(date, '%d. %b %Y').strftime('%Y-%m-%d')
 
-soup = BeautifulSoup(home_page.text, 'html.parser')
 
-cruise_list = soup.find(class_='content')
+def get_cruise_links():
+    url = domain + '/en/river-cruises/cruise.html'
+    page = do_request(url, headers)
+    data = scrape_data(page.text, 'html.parser')
+    block = data.find(class_='content')
+    return block.find_all('a')
 
-links_on_each_cruise = cruise_list.find_all('a')
 
-result = []
-for link_on_cruise in links_on_each_cruise:
-    url = domain + link_on_cruise.get('href')
-    cruise_page = do_request(url, headers)
+def generate_cruises_info():
+    result = []
 
-    content = scrape_data(content=cruise_page.text, parser='html.parser')
+    for link in get_cruise_links():
+        url = domain + link.get('href')
+        cruise_page = do_request(url, headers)
 
-    cruise_info = {
-        'name': content.find(class_='river-site-highlight').h1.string.strip('\n').strip(),
-        'days': content.find(class_='cruise-duration').text.strip(' Days'),
-        'itinerary': get_routes(content.find(class_='route')),
-        'dates': get_dates_prices(content.find(class_='accordeon-data-price'))
-    }
+        content = scrape_data(content=cruise_page.text, parser='html.parser')
 
-    result.append(cruise_info)
+        cruise_info = {
+            'name': get_name(content),
+            'days': get_days(content),
+            'itinerary': get_itinerary(content),
+            'dates': get_dates(content)
+        }
 
-    if len(result) == 4:
-        break
+        result.append(cruise_info)
 
-print(result)
+        if len(result) == 4:
+            break
+
+    return result
+
+print(generate_cruises_info())
