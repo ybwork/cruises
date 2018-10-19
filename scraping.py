@@ -61,7 +61,7 @@ def get_days(content):
 
 def get_itinerary(content):
     block = content.find(class_='route')
-    return [route.get_text('', strip=True) for route in block.find_all(class_='route-city')]
+    return [route.get_text('', strip=True).split('>')[0] for route in block.find_all(class_='route-city')]
 
 
 def get_dates(content):
