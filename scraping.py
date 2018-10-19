@@ -91,8 +91,8 @@ def transform_date(date):
 def main():
     try:
         print(generate_cruises_info())
-    except (NameError, AttributeError, ImportError, KeyError, NameError, SyntaxError, ValueError, TypeError) as err:
-        print('Something went wrong, try again later.')
+    except (NameError, AttributeError, ImportError, KeyError, NameError, SyntaxError, ValueError, TypeError) as error:
+        print('Something went wrong, try again later. Send this error to the administrator: {error}'.format(error=error))
 
 
 if __name__ == '__main__':
