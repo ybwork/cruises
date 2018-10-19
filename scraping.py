@@ -89,7 +89,10 @@ def transform_date(date):
 
 
 def main():
-    print(generate_cruises_info())
+    try:
+        print(generate_cruises_info())
+    except (NameError, AttributeError, ImportError, KeyError, NameError, SyntaxError, ValueError, TypeError) as err:
+        print('Something went wrong, try again later.')
 
 
 if __name__ == '__main__':

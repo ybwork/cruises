@@ -18,8 +18,11 @@ def install_modules():
 
 
 def main():
-    install_env()
-    install_modules()
+    try:
+        install_env()
+        install_modules()
+    except (NameError, TypeError):
+        print('Something went wrong, try again later.')
 
 
 if __name__ == '__main__':
