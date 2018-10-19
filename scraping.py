@@ -4,10 +4,43 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
+
 domain = 'https://www.lueftner-cruises.com'
 user_agent = 'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion'
 headers = {'User-Agent': user_agent}
 scraper = BeautifulSoup
+
+
+def generate_cruises_info():
+    result = []
+
+    for link in get_cruise_links():
+        cruise_page = do_request(link, headers)
+
+        content = scrape_data(content=cruise_page.text, parser='html.parser')
+
+        cruise_info = {
+            'name': get_name(content),
+            'days': get_days(content),
+            'itinerary': get_itinerary(content),
+            'dates': get_dates(content)
+        }
+
+        result.append(cruise_info)
+
+        if len(result) == 4:
+            break
+
+    return result
+
+
+def get_cruise_links():
+    url = domain + '/en/river-cruises/cruise.html'
+    page = do_request(url, headers)
+    data = scrape_data(page.text, 'html.parser')
+    block = data.find(class_='content')
+    blocks = data.find_all(class_='travel-box-container')
+    return [domain + block.find('a').get('href') for block in blocks]
 
 
 def do_request(url, headers):
@@ -55,35 +88,9 @@ def transform_date(date):
     return datetime.strptime(date, '%d. %b %Y').strftime('%Y-%m-%d')
 
 
-def get_cruise_links():
-    url = domain + '/en/river-cruises/cruise.html'
-    page = do_request(url, headers)
-    data = scrape_data(page.text, 'html.parser')
-    block = data.find(class_='content')
-    return block.find_all('a')
+def main():
+    print(generate_cruises_info())
 
 
-def generate_cruises_info():
-    result = []
-
-    for link in get_cruise_links():
-        url = domain + link.get('href')
-        cruise_page = do_request(url, headers)
-
-        content = scrape_data(content=cruise_page.text, parser='html.parser')
-
-        cruise_info = {
-            'name': get_name(content),
-            'days': get_days(content),
-            'itinerary': get_itinerary(content),
-            'dates': get_dates(content)
-        }
-
-        result.append(cruise_info)
-
-        if len(result) == 4:
-            break
-
-    return result
-
-print(generate_cruises_info())
+if __name__ == '__main__':
+    main()
